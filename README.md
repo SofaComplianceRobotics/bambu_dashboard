@@ -1,12 +1,12 @@
 # Bambu Lab Print Farm Dashboard
 
-A local dashboard to monitor all your Bambu Lab printers in real time — temperatures, progress, layers, and status — all in one browser tab.
+A local dashboard to monitor all Bambu Lab printers in real time — temperatures, progress, layers, and status — all in one browser tab.
 
 ---
 
 ## Requirements
 
-- A Windows PC on the same local network as your printers
+- A Windows PC on the same local network the printers
 - Node.js installed on your machine
 - LAN Mode enabled on each Bambu Lab printer
 
