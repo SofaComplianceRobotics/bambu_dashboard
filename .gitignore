@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Runtime files
+*.log
+*.err
+*.pid
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

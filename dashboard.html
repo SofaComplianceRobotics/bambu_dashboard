@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bambu Lab — Print Farm</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0e0f0f;
+    --bg2:      #161717;
+    --bg3:      #1e2020;
+    --border:   #2a2d2d;
+    --border2:  #363a3a;
+    --text:     #e8eaea;
+    --text2:    #8a9090;
+    --text3:    #4a5252;
+    --green:    #1dba7e;
+    --green-d:  #0d3d29;
+    --green-t:  #4de8a8;
+    --amber:    #e89c1d;
+    --amber-d:  #3a2a06;
+    --amber-t:  #f5c96a;
+    --red:      #e84d4d;
+    --red-d:    #3a1010;
+    --red-t:    #f58a8a;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+
+  .page { max-width: 1140px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* topbar */
+  .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 30px; height: 30px; border: 1.5px solid var(--green); border-radius: 6px; display: grid; place-items: center; }
+  .logo-name { font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: 0.05em; }
+  .logo-sub { font-size: 11px; color: var(--text2); font-family: var(--mono); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .ws-badge { font-family: var(--mono); font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid; transition: all 0.3s; }
+  .ws-connected    { background: var(--green-d); color: var(--green-t); border-color: #1d5c3d; }
+  .ws-disconnected { background: var(--red-d);   color: var(--red-t);   border-color: #5a1a1a; }
+  .ws-connecting   { background: var(--bg3);      color: var(--text3);   border-color: var(--border); }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .live-dot.on  { animation: blink 2s infinite; }
+  .live-dot.off { background: var(--text3); animation: none; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .last-update { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+
+  /* summary */
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .sum-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+  .sum-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .sum-val { font-family: var(--mono); font-size: 24px; font-weight: 500; }
+  .sum-val.green { color: var(--green-t); }
+  .sum-val.amber { color: var(--amber-t); }
+
+  /* grid */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative; overflow: hidden; transition: border-color 0.4s; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 12px 12px 0 0; transition: background 0.4s; }
+  .card.printing  { border-color: #1d3d2d; } .card.printing::before  { background: var(--green); }
+  .card.paused    { border-color: #3a2a06; } .card.paused::before    { background: var(--amber); }
+  .card.error     { border-color: #3a1010; } .card.error::before     { background: var(--red); }
+  .card.idle::before       { background: var(--border2); }
+  .card.connecting::before { background: var(--border); animation: shimmer 1.5s infinite; }
+  @keyframes shimmer { 0%,100%{opacity:0.3} 50%{opacity:0.9} }
+
+  .card-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+  .printer-num { font-family: var(--mono); font-size: 11px; font-weight: 500; width: 26px; height: 26px; border-radius: 5px; background: var(--bg3); border: 1px solid var(--border2); display: grid; place-items: center; flex-shrink: 0; color: var(--text2); }
+  .card-title { flex: 1; min-width: 0; }
+  .card-name  { font-size: 14px; font-weight: 500; }
+  .card-ip    { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+  .status-pill { font-family: var(--mono); font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.05em; text-transform: uppercase; flex-shrink: 0; border: 1px solid; }
+  .pill-printing   { background: var(--green-d); color: var(--green-t); border-color: #1d5c3d; }
+  .pill-idle       { background: var(--bg3);      color: var(--text3);   border-color: var(--border); }
+  .pill-paused     { background: var(--amber-d);  color: var(--amber-t); border-color: #5a3d06; }
+  .pill-error      { background: var(--red-d);    color: var(--red-t);   border-color: #5a1a1a; }
+  .pill-connecting { background: var(--bg3);      color: var(--text3);   border-color: var(--border); animation: shimmer 1.5s infinite; }
+
+  .file-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; min-height: 18px; overflow: hidden; }
+  .file-name { font-family: var(--mono); font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .prog-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .prog-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .prog-pct { font-family: var(--mono); font-size: 20px; font-weight: 500; }
+  .prog-pct.green { color: var(--green-t); }
+  .prog-pct.amber { color: var(--amber-t); }
+
+  .bar-bg { height: 4px; background: var(--bg3); border-radius: 99px; overflow: hidden; margin-bottom: 14px; }
+  .bar-fill { height: 100%; border-radius: 99px; transition: width 3s ease; }
+  .bar-green { background: var(--green); }
+  .bar-amber { background: var(--amber); }
+  .bar-red   { background: var(--red); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stat { background: var(--bg3); border-radius: 6px; padding: 8px 10px; }
+  .stat-label { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .stat-val { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .stat-val.hot  { color: #f5a070; }
+  .stat-val.warm { color: #f0c88a; }
+
+  .layer-row { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 8px; }
+
+  .idle-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0; gap: 8px; border: 1px dashed var(--border); border-radius: 8px; color: var(--text3); font-family: var(--mono); font-size: 11px; }
+
+  .error-msg { background: var(--red-d); border: 1px solid #5a1a1a; border-radius: 8px; padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: var(--red-t); margin-top: 4px; }
+  .pause-note { background: var(--amber-d); border: 1px solid #5a3d06; border-radius: 8px; padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: var(--amber-t); margin-top: 10px; line-height: 1.6; }
+
+  .connecting-msg { padding: 1.5rem 0; display: flex; flex-direction: column; gap: 10px; }
+  .skeleton { background: var(--bg3); border-radius: 4px; animation: shimmer 1.5s infinite; }
+
+  /* disconnected overlay */
+  .offline-banner { display: none; background: var(--red-d); border: 1px solid #5a1a1a; border-radius: 8px; padding: 10px 16px; font-family: var(--mono); font-size: 12px; color: var(--red-t); margin-bottom: 1rem; }
+  .offline-banner.show { display: block; }
+
+  @media (max-width: 700px) {
+    .grid    { grid-template-columns: 1fr; }
+    .stats   { grid-template-columns: repeat(2, 1fr); }
+    .summary { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="7" width="12" height="7" rx="1.5" stroke="#1dba7e" stroke-width="1.2" fill="none"/>
+          <rect x="4" y="3" width="8" height="5" rx="1" stroke="#1dba7e" stroke-width="1.2" fill="none"/>
+          <rect x="5" y="14" width="6" height="1.5" rx="0.5" stroke="#1dba7e" stroke-width="1" fill="none"/>
+          <circle cx="12" cy="10.5" r="1" fill="#1dba7e" opacity="0.6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">BAMBU LAB</div>
+        <div class="logo-sub">Print Farm Dashboard</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-dot off" id="live-dot"></div>
+      <span class="ws-badge ws-connecting" id="ws-badge">Connecting…</span>
+      <span class="last-update" id="last-update"></span>
+    </div>
+  </div>
+
+  <div class="offline-banner" id="offline-banner">
+    ✗ Bridge server not running — start <strong>start_dashboard.bat</strong> to connect to your printers
+  </div>
+
+  <div class="summary">
+    <div class="sum-card"><div class="sum-label">Printing</div><div class="sum-val green" id="s-printing">—</div></div>
+    <div class="sum-card"><div class="sum-label">Idle</div><div class="sum-val" id="s-idle">—</div></div>
+    <div class="sum-card"><div class="sum-label">Avg progress</div><div class="sum-val amber" id="s-avg">—</div></div>
+    <div class="sum-card"><div class="sum-label">Longest ETA</div><div class="sum-val" id="s-eta">—</div></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+</div>
+
+<script>
+const WS_URL = 'ws://localhost:3000';
+const RECONNECT_DELAY = 4000;
+
+let printers = [];
+let ws = null;
+let reconnectTimer = null;
+
+// ── Notifications ──────────────────────────────────────────────
+const prevStatus = {};
+
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+function notify(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  new Notification(title, { body });
+}
+
+function checkTransition(printer) {
+  const prev = prevStatus[printer.id];
+  const now  = printer.status;
+  prevStatus[printer.id] = now;
+  if (prev === undefined || prev === now) return;
+
+  if (now === 'idle' && (prev === 'printing' || prev === 'paused')) {
+    notify(`${printer.name} — Done`, 'Print finished successfully');
+  } else if (now === 'paused' && prev === 'printing') {
+    notify(`${printer.name} — Paused`, 'Check printer screen for details');
+  } else if (now === 'error') {
+    notify(`${printer.name} — Error`, printer.error || 'Print failed');
+  }
+}
+
+function fmt(sec) {
+  if (!sec || sec <= 0) return '—';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m.toString().padStart(2,'0')}m` : `${m}m`;
+}
+
+function renderCard(p) {
+  const s = p.status || 'connecting';
+  const pills = { printing:'pill-printing', idle:'pill-idle', paused:'pill-paused', error:'pill-error', connecting:'pill-connecting' };
+  const labels = { printing:'Printing', idle:'Idle', paused:'Paused', error:'Error', connecting:'…' };
+  const bars   = { printing:'bar-green', paused:'bar-amber', error:'bar-red' };
+  const pctCol = s === 'printing' ? 'green' : s === 'paused' ? 'amber' : '';
+  const isActive = s === 'printing' || s === 'paused';
+
+  const fileRow = isActive && p.file ? `
+    <div class="file-row">
+      <svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M1 1h5.5L9 3.5V11H1V1z" stroke="#4a5252" stroke-width="1"/><path d="M6 1v3h3" stroke="#4a5252" stroke-width="1"/></svg>
+      <span class="file-name">${p.file}</span>
+    </div>` : '';
+
+  const progArea = isActive ? `
+    <div class="prog-row">
+      <span class="prog-label">Progress</span>
+      <span class="prog-pct ${pctCol}">${p.progress}%</span>
+    </div>
+    <div class="bar-bg"><div class="bar-fill ${bars[s] || ''}" style="width:${p.progress}%"></div></div>` : '';
+
+  const statsArea = isActive ? `
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Elapsed</div><div class="stat-val">${fmt(p.elapsed)}</div></div>
+      <div class="stat"><div class="stat-label">Remaining</div><div class="stat-val">${fmt(p.remaining)}</div></div>
+      <div class="stat"><div class="stat-label">Nozzle</div><div class="stat-val hot">${p.nozzle > 0 ? p.nozzle+'°' : '—'}</div></div>
+      <div class="stat"><div class="stat-label">Bed</div><div class="stat-val warm">${p.bed > 0 ? p.bed+'°' : '—'}</div></div>
+    </div>
+    ${p.total_layers > 0 ? `<div class="layer-row">Layer ${p.layer} / ${p.total_layers}</div>` : ''}` : '';
+
+  const pauseNote = s === 'paused' ? `
+    <div class="pause-note">
+      ${p.hms && p.hms.length > 0
+        ? p.hms.map(h => `HMS&nbsp;0x${h.attr.toString(16).toUpperCase()}&nbsp;/&nbsp;0x${h.code.toString(16).toUpperCase()}`).join('<br>')
+        : 'Paused — check printer screen for details'
+      }
+    </div>` : '';
+
+  const idleArea = s === 'idle' ? `
+    <div class="idle-msg">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="11" stroke="#2a2d2d" stroke-width="1.5" stroke-dasharray="3 3"/><line x1="9" y1="14" x2="19" y2="14" stroke="#4a5252" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Ready
+    </div>` : '';
+
+  const connectingArea = s === 'connecting' ? `
+    <div class="connecting-msg">
+      <div class="skeleton" style="height:10px;width:55%;"></div>
+      <div class="skeleton" style="height:4px;width:100%;"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        <div class="skeleton" style="height:46px;"></div>
+        <div class="skeleton" style="height:46px;"></div>
+        <div class="skeleton" style="height:46px;"></div>
+        <div class="skeleton" style="height:46px;"></div>
+      </div>
+    </div>` : '';
+
+  const errorArea = s === 'error' ? `<div class="error-msg">⚠ ${p.error || 'Connection failed'}</div>` : '';
+
+  return `<div class="card ${s}">
+    <div class="card-head">
+      <div class="printer-num">${p.id + 1}</div>
+      <div class="card-title">
+        <div class="card-name">${p.name}</div>
+        <div class="card-ip">${p.ip}</div>
+      </div>
+      <span class="status-pill ${pills[s]}">${labels[s]}</span>
+    </div>
+    ${fileRow}${progArea}${statsArea}${pauseNote}${idleArea}${connectingArea}${errorArea}
+  </div>`;
+}
+
+function renderGrid() {
+  if (printers.length === 0) {
+    document.getElementById('grid').innerHTML = [0,1,2,3].map(i => renderCard({
+      id: i, name: `Printer ${i+1}`, ip: '—', status: 'connecting'
+    })).join('');
+    return;
+  }
+  document.getElementById('grid').innerHTML = printers.map(renderCard).join('');
+}
+
+function renderSummary() {
+  const printing = printers.filter(p => p.status === 'printing').length;
+  const idle     = printers.filter(p => p.status === 'idle').length;
+  const progs    = printers.filter(p => p.status === 'printing' && p.progress > 0).map(p => p.progress);
+  const avg      = progs.length ? Math.round(progs.reduce((a,b) => a+b, 0) / progs.length) : null;
+  const maxEta   = Math.max(0, ...printers.filter(p => p.remaining > 0).map(p => p.remaining));
+
+  document.getElementById('s-printing').textContent = printing;
+  document.getElementById('s-idle').textContent     = idle;
+  document.getElementById('s-avg').textContent      = avg !== null ? avg + '%' : '—';
+  document.getElementById('s-eta').textContent      = maxEta > 0 ? fmt(maxEta) : '—';
+}
+
+// ── WebSocket connection ───────────────────────────────────────
+function connect() {
+  const badge = document.getElementById('ws-badge');
+  const dot   = document.getElementById('live-dot');
+  const banner = document.getElementById('offline-banner');
+
+  badge.textContent = 'Connecting…';
+  badge.className   = 'ws-badge ws-connecting';
+  dot.className     = 'live-dot off';
+
+  try { ws = new WebSocket(WS_URL); } catch(e) { scheduleReconnect(); return; }
+
+  ws.onopen = () => {
+    badge.textContent = 'Live';
+    badge.className   = 'ws-badge ws-connected';
+    dot.className     = 'live-dot on';
+    banner.classList.remove('show');
+    clearTimeout(reconnectTimer);
+  };
+
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+
+    if (msg.type === 'full_state') {
+      printers = msg.printers;
+      printers.forEach(p => { prevStatus[p.id] = p.status; });
+    } else if (msg.type === 'printer_update') {
+      checkTransition(msg.printer);
+      const idx = printers.findIndex(p => p.id === msg.printer.id);
+      if (idx >= 0) printers[idx] = msg.printer;
+      else printers.push(msg.printer);
+      printers.sort((a,b) => a.id - b.id);
+    }
+
+    renderGrid();
+    renderSummary();
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+  };
+
+  ws.onclose = () => {
+    badge.textContent = 'Offline';
+    badge.className   = 'ws-badge ws-disconnected';
+    dot.className     = 'live-dot off';
+    banner.classList.add('show');
+    scheduleReconnect();
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function scheduleReconnect() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = setTimeout(connect, RECONNECT_DELAY);
+}
+
+renderGrid();
+connect();
+</script>
+</body>
+</html>

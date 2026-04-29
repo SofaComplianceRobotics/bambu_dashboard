@@ -1,0 +1,10 @@
+{
+  "name": "bambu-dashboard",
+  "version": "1.0.0",
+  "description": "Bambu Lab Print Farm Dashboard",
+  "main": "server.js",
+  "dependencies": {
+    "mqtt": "^5.3.4",
+    "ws": "^8.16.0"
+  }
+}
