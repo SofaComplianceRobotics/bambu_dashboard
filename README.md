@@ -15,7 +15,7 @@ A local dashboard to monitor all Bambu Lab printers in real time — temperature
 ## Step 1 — Install Node.js
 
 1. Go to **https://nodejs.org**
-2. Click the **LTS** download button (the left one, recommended for most users)
+2. Click the **LTS** download button
 3. Run the installer and click through with all default options
 
 ---
@@ -32,7 +32,7 @@ On each printer you want to monitor:
 
 ## Step 3 — Configure your printers
 
-Open `server.js` in any text editor (Notepad is fine) and find this section near the top:
+Open `server.js` in any text editor and find this section near the top:
 
 ```js
 const PRINTERS = [
@@ -60,32 +60,12 @@ You can have as many lines as you want.
 
 Double-click **`start_dashboard.bat`**
 
-- On first run it will install dependencies automatically (takes ~30 seconds, only happens once)
+- On first run it will install dependencies automatically (takes ~30 seconds)
 - Your browser will open the dashboard automatically
-- Keep the black console window open — closing it stops the server
 - The first time running it if it only installed the dependencies but did not launch the window, then just relaunch the .bat
+- To close the program, you can launch the stop_dashboard.bat
 
 ---
-
-## Troubleshooting
-
-**Window opens and closes instantly**
-Make sure Node.js is installed correctly. Open a Command Prompt and run `node --version`. If it says "not recognized", reinstall Node from nodejs.org and make sure to check "Add to PATH" during installation.
-
-**Printer shows "Not authorized"**
-The Access Code is wrong. Open the Bambu app, go to LAN Mode and copy the code again — it changes every time you toggle LAN mode off and on.
-
-**Printer shows "connack timeout"**
-The IP address is wrong or the printer is offline. Check your router's connected devices list to find the correct IP, and make sure LAN Mode is enabled on that printer.
-
-**Dashboard doesn't open in browser**
-Open `dashboard.html` manually in your browser. It's in the `bambu_dashboard` folder. The server must be running (console window open) for it to show live data.
-
----
-
-## Stopping the dashboard
-
-Just close the black console window, or press `Ctrl+C` inside it.
 
 ## Seeing more data
 
